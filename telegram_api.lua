@@ -179,79 +179,48 @@ end
 
 -------------------------------------------------------------------------------
 
-api.inline_keyboard = {}
-local ikeyboard = api.inline_keyboard
+api.keyboard = {}
+api.keyboard.__index = api.keyboard
 
-function ikeyboard:addRow(row)
-	row = row or {}
+function api.keyboard:new(type)
+	local obj = {}
+	obj.keyboard = {}
+	obj.type = type
+	obj.curRow = false
 
-	table_insert(self.keyboard, row)
+	return setmetatable(obj, api.keyboard)
 end
 
-function ikeyboard:addButton(row, args)
-	if row > #self.keyboard then 
-		error('addButton: row can not be greater than amount of rows in keyboard')
-	end
+function api.keyboard:addRow(row)
+	row = row or {}
+	table_insert(self.keyboard, row)
 
+	self.curRow = #self.keyboard
+end
+
+function api.keyboard:setCurrentRow(index)
+	if not index then error('setCurrentRow: index must be specified') end
+	if index > #self.keyboard then error('setCurrentRow: wrong index') end
+
+	self.curRow = index
+end
+
+function api.keyboard:addButton(args)
+	if not self.curRow then error('You must create a row first') end
 	local button = {}
 
 	for k, v in pairs(args) do
 		button[k] = v
 	end
 
-	table_insert(self.keyboard[row], button)
+	table_insert(self.keyboard[self.curRow], button)
 end
 
-function ikeyboard:encode()
+function api.keyboard:encode()
 	local kobj = {}
 	kobj[self.type] = self.keyboard
 
-	print(require'serpent'.block(kobj))
 	return json.encode(kobj)
-end
-
-
-
-do
-	local addRow = function(self, row)
-		row = row or {}
-
-		table_insert(self.keyboard, row)
-	end
-
-	local addButton = function(self, row, args)
-		if row > #self.keyboard then 
-			error('addButton: row can not be greater than amount of rows in keyboard')
-		end
-
-		local button = {}
-
-		for k, v in pairs(args) do
-			button[k] = v
-		end
-
-		table_insert(self.keyboard[row], button)
-	end
-
-	local encode = function(self)
-		local kobj = {}
-		kobj[self.type] = self.keyboard
-
-		print(require'serpent'.block(kobj))
-		return json.encode(kobj)
-	end
-
-	api.newKeyboard = function(self, type)
-		local obj = {
-			addRow = addRow,
-			addButton = addButton,
-			encode = encode
-		}
-		obj.keyboard = {}
-		obj.type = type
-
-		return obj
-	end
 end
 
 -------------------------------------------------------------------------------
